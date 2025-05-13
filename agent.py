@@ -2,6 +2,7 @@ from collections.abc import AsyncIterable
 from typing import Any, Literal
 
 import httpx
+import tomli
 
 from langchain_core.messages import AIMessage, ToolMessage
 from langchain_core.tools import tool
@@ -15,6 +16,10 @@ from langchain_openai import ChatOpenAI
 from langchain_community.tools import WikipediaQueryRun
 from langchain_community.utilities import WikipediaAPIWrapper
 
+# Load configuration
+with open("config.toml", "rb") as f:
+    config = tomli.load(f)
+
 wikipedia = WikipediaQueryRun(api_wrapper=WikipediaAPIWrapper())
 
 memory = MemorySaver()
@@ -26,19 +31,21 @@ class ResponseFormat(BaseModel):
     message: str
 
 
+# Get the agent class name from config
+agent_name = config["agent"]["name"]
+
+# Define the agent class with the name from config
 class WikipediaAgent:
-    SYSTEM_INSTRUCTION = (
-        'You are a specialized assistant for Wikipedia information. '
-        "Your sole purpose is to use the 'search_wikipedia' tool to answer questions about factual information. "
-        'If the user asks about anything other than factual information that could be found on Wikipedia, '
-        'politely state that you cannot help with that topic and can only assist with queries about factual information. '
-        'Do not attempt to answer unrelated questions or use tools for other purposes.'
-        'Set response status to input_required if the user needs to provide more information.'
-        'Set response status to error if there is an error while processing the request.'
-        'Set response status to completed if the request is complete.'
-    )
+    # Read system instruction from config
+    SYSTEM_INSTRUCTION = config["agent"]["system_instruction"]
+    # Read supported content types from config
+    SUPPORTED_CONTENT_TYPES = config["agent"]["supported_content_types"]
     def __init__(self):
-        self.model = ChatOpenAI(model = "gpt-4o-mini", temperature=0)
+        # Read model configuration from config
+        self.model = ChatOpenAI(
+            model=config["model"]["name"], 
+            temperature=config["model"]["temperature"]
+        )
         self.tools = [wikipedia]
 
         self.graph = create_react_agent(
@@ -68,13 +75,13 @@ class WikipediaAgent:
                 yield {
                     'is_task_complete': False,
                     'require_user_input': False,
-                    'content': 'Looking up the wikipedia data...',
+                    'content': config["streaming"]["working_messages"][0],
                 }
             elif isinstance(message, ToolMessage):
                 yield {
                     'is_task_complete': False,
                     'require_user_input': False,
-                    'content': 'Processing the wikipedia data..',
+                    'content': config["streaming"]["working_messages"][1],
                 }
 
         yield self.get_agent_response(config)
@@ -104,7 +111,5 @@ class WikipediaAgent:
         return {
             'is_task_complete': False,
             'require_user_input': True,
-            'content': 'We are unable to process your request at the moment. Please try again.',
+            'content': config["streaming"]["error_message"],
         }
-
-    SUPPORTED_CONTENT_TYPES = ['text', 'text/plain']

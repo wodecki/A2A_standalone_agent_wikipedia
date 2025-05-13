@@ -1,5 +1,6 @@
 import logging
 import os
+import tomli
 
 import click
 
@@ -21,10 +22,14 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Load configuration
+with open("config.toml", "rb") as f:
+    config = tomli.load(f)
+
 
 @click.command()
-@click.option('--host', 'host', default='localhost')
-@click.option('--port', 'port', default=10000)
+@click.option('--host', 'host', default=config["server"]["default_host"])
+@click.option('--port', 'port', default=config["server"]["default_port"])
 def main(host, port):
     """Starts the Wikipedia Agent server."""
     try:
@@ -33,23 +38,34 @@ def main(host, port):
                 'GOOGLE_API_KEY environment variable not set.'
             )
 
-        capabilities = AgentCapabilities(streaming=True, pushNotifications=True)
-        skill = AgentSkill(
-            id='Wikipedia_search',
-            name='Wikipedia search tool',
-            description='Helps with searching Wikipedia to find information',
-            tags=['Wikipedia search', 'Wikipedia data'],
-            examples=['Tell me about Adam Mickiewicz', 'What is the capital of France?'],
+        # Create capabilities from config
+        capabilities = AgentCapabilities(
+            streaming=config["agent_card"]["capabilities"]["streaming"],
+            pushNotifications=config["agent_card"]["capabilities"]["pushNotifications"]
         )
+        
+        # Create skills from config
+        skills = []
+        for skill_config in config["agent_card"]["skills"]:
+            skill = AgentSkill(
+                id=skill_config["id"],
+                name=skill_config["name"],
+                description=skill_config["description"],
+                tags=skill_config["tags"],
+                examples=skill_config["examples"],
+            )
+            skills.append(skill)
+        
+        # Create agent card from config
         agent_card = AgentCard(
-            name='Wikipedia Agent',
-            description='Helps with searching Wikipedia to find information',
+            name=config["agent_card"]["name"],
+            description=config["agent_card"]["description"],
             url=f'http://{host}:{port}/',
-            version='1.0.0',
+            version=config["agent_card"]["version"],
             defaultInputModes=WikipediaAgent.SUPPORTED_CONTENT_TYPES,
             defaultOutputModes=WikipediaAgent.SUPPORTED_CONTENT_TYPES,
             capabilities=capabilities,
-            skills=[skill],
+            skills=skills,
         )
 
         notification_sender_auth = PushNotificationSenderAuth()
