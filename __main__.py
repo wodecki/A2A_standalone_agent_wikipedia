@@ -28,8 +28,8 @@ with open("config.toml", "rb") as f:
 
 
 @click.command()
-@click.option('--host', 'host', default='localhost')
-@click.option('--port', 'port', default=10000)
+@click.option('--host', 'host', default=config["server"]["default_host"])
+@click.option('--port', 'port', default=config["server"]["default_port"])
 def main(host, port):
     """Starts the Wikipedia Agent server."""
     try:

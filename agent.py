@@ -41,7 +41,11 @@ class WikipediaAgent:
     # Read supported content types from config
     SUPPORTED_CONTENT_TYPES = config["agent"]["supported_content_types"]
     def __init__(self):
-        self.model = ChatOpenAI(model = "gpt-4o-mini", temperature=0)
+        # Read model configuration from config
+        self.model = ChatOpenAI(
+            model=config["model"]["name"], 
+            temperature=config["model"]["temperature"]
+        )
         self.tools = [wikipedia]
 
         self.graph = create_react_agent(
@@ -71,13 +75,13 @@ class WikipediaAgent:
                 yield {
                     'is_task_complete': False,
                     'require_user_input': False,
-                    'content': 'Looking up the wikipedia data...',
+                    'content': config["streaming"]["working_messages"][0],
                 }
             elif isinstance(message, ToolMessage):
                 yield {
                     'is_task_complete': False,
                     'require_user_input': False,
-                    'content': 'Processing the wikipedia data..',
+                    'content': config["streaming"]["working_messages"][1],
                 }
 
         yield self.get_agent_response(config)
@@ -107,5 +111,5 @@ class WikipediaAgent:
         return {
             'is_task_complete': False,
             'require_user_input': True,
-            'content': 'We are unable to process your request at the moment. Please try again.',
+            'content': config["streaming"]["error_message"],
         }

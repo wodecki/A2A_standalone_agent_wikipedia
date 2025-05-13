@@ -8,9 +8,31 @@ The agent is configured using `config.toml`, which contains:
 
 - Agent name and system instructions
 - Supported content types
+- Model configuration (name and temperature)
+- Streaming messages
+- Server configuration (host and port)
 - Agent card details including capabilities and skills
 
 This configuration-driven approach makes it easy to modify the agent's behavior without changing the code.
+
+### Configuration Sections
+
+```toml
+[agent]
+# Agent name, system instructions, and supported content types
+
+[model]
+# LLM model name and temperature settings
+
+[streaming]
+# Messages displayed during streaming operations
+
+[server]
+# Default host and port settings
+
+[agent_card]
+# Agent card details, capabilities, and skills
+```
 
 ## Running the Agent
 
