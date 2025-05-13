@@ -23,7 +23,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Load configuration
-with open("config.toml", "rb") as f:
+with open("agent_config.toml", "rb") as f:
     config = tomli.load(f)
 
 
